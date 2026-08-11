@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - JWT_SECRET=super_secret_erp_crm_jwt_key_2026_antigravity
+      - DATABASE_URL=file:./dev.db
+    volumes:
+      - backend-db:/app/prisma
+
+volumes:
+  backend-db:

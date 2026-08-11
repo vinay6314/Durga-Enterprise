@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <!-- Top Arc Text -->
+  <path id="topArc" d="M 30,100 A 70,70 0 0,1 170,100" fill="none" />
+  <text font-family="Inter, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#116853" letter-spacing="2">
+    <textPath href="#topArc" startOffset="50%" text-anchor="middle">
+      DURGA ENTERPRISE
+    </textPath>
+  </text>
+
+  <!-- Outer Ring Circle -->
+  <circle cx="100" cy="110" r="62" fill="none" stroke="#116853" stroke-width="4" />
+  
+  <!-- Inner Concentric Circle -->
+  <circle cx="100" cy="110" r="54" fill="none" stroke="#116853" stroke-width="1.8" />
+
+  <!-- Center Signature Name -->
+  <text x="100" y="104" font-family="'Times New Roman', Georgia, serif" font-style="italic" font-weight="700" font-size="18" fill="#1c1c1f" text-anchor="middle">
+    B.N.V. Vinay
+  </text>
+
+  <!-- Divider Line -->
+  <line x1="68" y1="112" x2="132" y2="112" stroke="#116853" stroke-width="1.2" />
+
+  <!-- Center D Badge Circle -->
+  <circle cx="100" cy="122" r="7" fill="#116853" />
+  <text x="100" y="125" font-family="Inter, sans-serif" font-weight="800" font-size="8" fill="#ffffff" text-anchor="middle">D</text>
+
+  <!-- Sub-label AUTHORIZED SIGNATORY -->
+  <text x="100" y="137" font-family="Inter, sans-serif" font-weight="600" font-size="7" fill="#64748b" letter-spacing="1" text-anchor="middle">
+    AUTHORIZED SIGNATORY
+  </text>
+
+  <!-- Bottom Arc Text -->
+  <path id="bottomArc" d="M 35,115 A 65,65 0 0,0 165,115" fill="none" />
+  <text font-family="Inter, Helvetica, sans-serif" font-size="10" font-weight="700" fill="#116853" letter-spacing="2">
+    <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">
+      AUTHORIZED SEAL
+    </textPath>
+  </text>
+</svg>
