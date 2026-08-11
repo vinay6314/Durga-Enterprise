@@ -17,9 +17,39 @@ export const login = async (req: Request, res: Response) => {
   const { email, password } = loginSchema.parse(req.body);
   const cleanEmail = email.toLowerCase().trim();
 
-  const user = await prisma.user.findUnique({
+  let user = await prisma.user.findUnique({
     where: { email: cleanEmail },
   });
+
+  // Auto-create default system accounts on the fly if missing in DB
+  if (!user) {
+    if (cleanEmail === 'vinaychoudary63@gmail.com' || cleanEmail === 'admin@erp.com') {
+      const defaultHash = await bcrypt.hash('Admin@123', 10);
+      user = await prisma.user.create({
+        data: {
+          name: cleanEmail === 'vinaychoudary63@gmail.com' ? 'Vinay Choudary' : 'System Admin',
+          email: cleanEmail,
+          passwordHash: defaultHash,
+          role: 'ADMIN',
+        },
+      });
+    } else if (cleanEmail === 'sales@erp.com') {
+      const hash = await bcrypt.hash('Sales@123', 10);
+      user = await prisma.user.create({
+        data: { name: 'Sarah Sales', email: cleanEmail, passwordHash: hash, role: 'SALES' },
+      });
+    } else if (cleanEmail === 'warehouse@erp.com') {
+      const hash = await bcrypt.hash('Warehouse@123', 10);
+      user = await prisma.user.create({
+        data: { name: 'Wayne Warehouse', email: cleanEmail, passwordHash: hash, role: 'WAREHOUSE' },
+      });
+    } else if (cleanEmail === 'accounts@erp.com') {
+      const hash = await bcrypt.hash('Accounts@123', 10);
+      user = await prisma.user.create({
+        data: { name: 'Adam Accounts', email: cleanEmail, passwordHash: hash, role: 'ACCOUNTS' },
+      });
+    }
+  }
 
   if (!user) {
     return res.status(401).json({ success: false, error: 'No account found with this email. Please sign up first.' });

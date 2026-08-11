@@ -63,6 +63,15 @@ async function main() {
     },
   });
 
+  const adminErp = await prisma.user.create({
+    data: {
+      name: 'System Admin',
+      email: 'admin@erp.com',
+      passwordHash: defaultPasswordHash,
+      role: Role.ADMIN,
+    },
+  });
+
   const salesUser = await prisma.user.create({
     data: {
       name: 'Sarah Sales',
