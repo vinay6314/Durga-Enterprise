@@ -1,83 +1,121 @@
-# 🚀 Durga Enterprise — Mini ERP & CRM Portal
+# 🚀 Durga Enterprise — Mini ERP + CRM Operations Portal
 
-A full-stack Enterprise Resource Planning (ERP) and Customer Relationship Management (CRM) application built with React, TypeScript, Node.js, Express, Prisma ORM, and SQLite / PostgreSQL.
+A full-stack Enterprise Resource Planning (ERP) and Customer Relationship Management (CRM) application built for wholesale and distribution business workflows.
 
 ![Durga Enterprise Portal](https://img.shields.io/badge/Durga%20Enterprise-Operations%20Portal-blue?style=for-the-badge)
 ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue?style=for-the-badge)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green.style=for-the-badge)
 
 ---
 
-## 📌 Project Submission Overview
+## 📋 Submission Requirements Checklist
 
-| Requirement Item | Submission Details |
-| :--- | :--- |
-| **1. GitHub Repository Link** | [https://github.com/vinay6314/Durga-Enterprise.git](https://github.com/vinay6314/Durga-Enterprise.git) |
-| **2. Live Frontend URL** | `http://localhost:3000` *(Local Dev Server)* |
-| **3. Live Backend API URL** | `http://localhost:5000` *(Local Express API)* |
-| **4. Test Credentials** | Listed in table below (ADMIN, SALES, WAREHOUSE, ACCOUNTS) |
-| **5. API Documentation** | Included in [Postman_Collection.json](./Postman_Collection.json) & detailed section below |
-| **6. Setup & Deployment** | Step-by-step local running & Docker guide below |
-| **7. Architecture Summary** | Express Node.js REST API + React SPA + Prisma ORM + PDFKit |
-| **8. Known Limitations** | Documented below |
+| # | Submission Item | Details & Location |
+| :--- | :--- | :--- |
+| **1** | **GitHub Repository Link** | 🔗 **[https://github.com/vinay6314/Durga-Enterprise.git](https://github.com/vinay6314/Durga-Enterprise.git)** |
+| **2** | **Live Frontend URL** | 🌐 **`http://localhost:3000`** *(Vite Dev Server / Production Build)* |
+| **3** | **Live Backend API URL** | ⚙️ **`http://localhost:5000`** *(Node.js Express REST API)* |
+| **4** | **Test Login Credentials** | 🔐 Credentials provided below for all 4 RBAC roles |
+| **5** | **Postman Collection & API Docs** | 📄 Included at **[`./Postman_Collection.json`](./Postman_Collection.json)** & detailed API specs below |
+| **6** | **README Setup & Deployment** | 📖 Complete setup, Docker, Environment Variables & Cloud Deployment guide below |
+| **7** | **Architecture Explanation** | 🏗️ Detailed architectural flow & tech stack breakdown below |
+| **8** | **Known Limitations & Assumptions** | ⚠️ Documented below |
 
 ---
 
-## 🔑 4. Test Login Credentials for All Roles
+## 🔐 4. Test Login Credentials for All Roles
 
-All accounts share organization-wide enterprise operational data. Log in with any role to experience role-specific access controls:
+The system uses Role-Based Access Control (RBAC). All team members share organization-wide enterprise operational data:
 
 | Role | Email | Password | Access Rights & Privileges |
 | :--- | :--- | :--- | :--- |
-| 🛡️ **ADMIN** | `vinaychoudary63@gmail.com` | `Admin@123` | Full system access to CRM, Inventory, Sales Challans, PDF Downloads & Stock Audit Logs |
+| 🛡️ **ADMIN** | `vinaychoudary63@gmail.com` | `Admin@123` | Full system access to CRM, Inventory, Sales Challans, PDF Exports & Stock Audit Logs |
 | 💼 **SALES** | `sales@erp.com` | `Sales@123` | Customer CRM management (Add/Edit/Delete), Create Sales Challans & Invoices |
-| 📦 **WAREHOUSE** | `warehouse@erp.com` | `Warehouse@123` | Manage product catalog, record Stock IN (+) / Stock OUT (-) adjustments & Stock Audit logs |
-| 📊 **ACCOUNTS** | `accounts@erp.com` | `Accounts@123` | View Sales Challans, monitor Grand Totals, and Download Official PDF Invoices |
+| 📦 **WAREHOUSE** | `warehouse@erp.com` | `Warehouse@123` | Product catalog, Stock IN (+) & Stock OUT (-) adjustments with reason logs & PDF reports |
+| 📊 **ACCOUNTS** | `accounts@erp.com` | `Accounts@123` | View Sales Challans, monitor Grand Totals, and Download Official PDF Tax Invoices |
 
 ---
 
-## 📜 5. API Documentation & Postman Collection
+## 🌟 Core Modules Implemented
 
-A complete Postman collection is included in the repository root at **[Postman_Collection.json](./Postman_Collection.json)**.
+### 1. Authentication & Roles (JWT + RBAC)
+- Secure JWT authentication with bcrypt password hashing (10 rounds).
+- RBAC middleware (`authorizeRoles`) protecting backend routes based on user role.
+- Dynamic account profile editing (Full Display Name & Password change modal).
 
-### Core Endpoints
+### 2. Customer CRM Module
+- **Fields**: Customer Name, Mobile Number, Email, Business Name, GST Number (Optional), Customer Type (`Retail`, `Wholesale`, `Distributor`), Address, Status (`Lead`, `Active`, `Inactive`), Follow-up Date, Notes.
+- **Features**: Add Customer, Edit Customer, Search/Filter, Delete Customer with safety modal, View Detail Page, and Append Follow-up Notes history.
 
-#### Authentication & Account Profile
-- `POST /api/auth/login` — Authenticate user and receive JWT token.
-- `POST /api/auth/register` — Create a new user account.
-- `GET /api/auth/me` — Fetch currently authenticated user profile.
-- `PUT /api/auth/profile` — Update logged-in user display name & change password.
+### 3. Product & Inventory Module
+- **Fields**: Product Name, SKU/Code, Category, Unit Price, Current Stock Balance, Minimum Stock Alert Quantity, Location/Warehouse.
+- **Stock Movement Log**: Tracks Product, Quantity Changed, Movement Type (`IN` or `OUT`), Reason, Created By (User & Role), and Timestamp.
+- **Audit Reports**: Instant PDF generation & download for Stock Movement Logs.
 
-#### Customer CRM Database
-- `GET /api/customers` — List all customers with search & pagination.
-- `GET /api/customers/:id` — Get customer details and interaction history.
-- `POST /api/customers` — Create a new customer profile.
-- `PUT /api/customers/:id` — Edit customer details.
-- `DELETE /api/customers/:id` — Delete a customer record.
-- `POST /api/customers/:id/follow-up` — Add follow-up notes.
+### 4. Sales Challan Module & Invoices
+- **Features**: Select Customer, Add multiple line items with custom quantities, Auto-generated Challan Number (`CHL-YYYYMMDD-XXXX`), Save as `DRAFT`, `CONFIRMED`, or `CANCELLED`.
+- **Business Logic Enforced**:
+  - Stock is automatically deducted when a challan is **CONFIRMED**.
+  - Prevents negative inventory stock with error feedback.
+  - Stores complete **Product Snapshot Data** (Name, SKU, Price at creation time) so historical invoices remain accurate even if product prices change later.
+- **PDF Export**: Vector PDF invoice generation featuring the official **Durga Enterprise Digital Stamp Seal**, dynamic signature, and local file download.
 
-#### Inventory & Product Management
-- `GET /api/products` — List all products and stock balances.
-- `POST /api/products` — Create a new product in catalog.
-- `POST /api/products/stock-movement` — Record Stock IN / Stock OUT movement.
-- `GET /api/products/stock-movements` — Fetch inventory movement audit logs.
-- `GET /api/products/stock-movements/pdf` — Download Stock Audit Log PDF.
+---
 
-#### Sales Challans & Invoices
-- `GET /api/challans` — List sales challans with search & filters.
-- `GET /api/challans/:id` — Get single sales challan snapshot.
-- `POST /api/challans` — Create a new sales challan (auto-deducts inventory stock).
-- `GET /api/challans/:id/pdf` — Download print-ready Tax Invoice PDF (with digital stamp seal).
+## 📜 5. API Documentation & Endpoints
+
+Postman Collection File: **[`Postman_Collection.json`](./Postman_Collection.json)**
+
+### Endpoint Overview
+```
+POST   /api/auth/login                  - User login (returns JWT token)
+POST   /api/auth/register               - User registration
+GET    /api/auth/me                     - Current authenticated user profile
+PUT    /api/auth/profile                - Update display name & password
+
+GET    /api/customers                   - Search & list customers (Paginated)
+GET    /api/customers/:id               - Get customer profile & follow-ups
+POST   /api/customers                   - Create customer
+PUT    /api/customers/:id               - Update customer
+DELETE /api/customers/:id               - Delete customer
+POST   /api/customers/:id/follow-up     - Add follow-up note
+
+GET    /api/products                    - List products & stock balances
+GET    /api/products/:id                - Get product detail
+POST   /api/products                    - Create product
+PUT    /api/products/:id                - Update product
+POST   /api/products/stock-movement     - Record Stock IN (+) / Stock OUT (-)
+GET    /api/products/stock-movements    - Audit logs list
+GET    /api/products/stock-movements/pdf- PDF audit report download
+
+GET    /api/challans                    - List sales challans (Paginated)
+GET    /api/challans/:id                - Get single sales challan snapshot
+POST   /api/challans                    - Create sales challan (auto-deducts stock)
+PUT    /api/challans/:id/status         - Update status (DRAFT/CONFIRMED/CANCELLED)
+GET    /api/challans/:id/pdf            - Download PDF Tax Invoice
+```
 
 ---
 
 ## 💻 6. Setup & Deployment Instructions
 
+### Environment Variables Management
+Environment variables are configured in `backend/.env` (or inherited via Docker environment):
+
+```env
+PORT=5000
+NODE_ENV=development
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="durga-enterprise-super-secret-jwt-key-2026"
+CORS_ORIGIN="http://localhost:3000"
+```
+
 ### Local Development Setup
 
 #### Prerequisites
-- **Node.js**: v18.x or higher
-- **npm**: v9.x or higher
+- Node.js (v18+)
+- npm (v9+)
 
 #### Step 1: Clone Repository
 ```bash
@@ -85,70 +123,91 @@ git clone https://github.com/vinay6314/Durga-Enterprise.git
 cd Durga-Enterprise
 ```
 
-#### Step 2: Backend Setup & Database Seeding
+#### Step 2: Backend Setup
 ```bash
 cd backend
 npm install
-npm run db:setup    # Generates Prisma client, applies migrations, and seeds test data
-npm run dev         # Starts backend API on http://localhost:5000
+npm run db:setup    # Applies Prisma schema, seeds users, customers & products
+npm run dev         # Runs backend API on http://localhost:5000
 ```
 
 #### Step 3: Frontend Setup
 ```bash
 cd ../frontend
 npm install
-npm run dev         # Starts Vite frontend on http://localhost:3000
+npm run dev         # Runs Vite frontend on http://localhost:3000
 ```
 
 ---
 
-### 🐳 Docker Deployment
+### 🐳 Docker Setup (Bonus Point Achieved)
 
-The application is containerized with Docker and Docker Compose.
+Run the entire application (Frontend + Backend + Database) in containerized isolation:
 
 ```bash
-# From project root directory
 docker-compose up --build
 ```
-- **Frontend App**: Accessible at `http://localhost:3000`
-- **Backend API**: Accessible at `http://localhost:5000`
+- **Frontend App**: `http://localhost:3000`
+- **Backend API**: `http://localhost:5000`
+
+---
+
+### 🌐 Cloud Deployment Options (Vercel / Render / Supabase)
+
+#### Frontend Deployment (Vercel / Netlify / Render Static Site)
+1. Set Root Directory to `frontend`.
+2. Build Command: `npm run build`
+3. Output Directory: `dist`
+4. Set Environment Variable: `VITE_API_URL=https://your-backend-api.onrender.com/api`
+
+#### Backend Deployment (Render / Railway / Fly.io)
+1. Set Root Directory to `backend`.
+2. Build Command: `npm install && npx prisma generate && npx prisma db push && npm run build`
+3. Start Command: `npm run start`
+4. Set Environment Variables: `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`.
 
 ---
 
 ## 🏗️ 7. Architecture Explanation
 
-The application follows a **Decoupled Client-Server REST Architecture**:
+The application follows a **Decoupled Tiered REST Architecture**:
 
 ```
- ┌─────────────────────────────────────────────────────────┐
- │                   React Frontend (Vite)                │
- │  - Custom UI Token System (Nordic Light & Dark Modes)    │
- │  - Context API State Management (AuthContext, Theme)   │
- │  - SVG Stamp Seal Rendering Engine                      │
- └────────────────────────────┬────────────────────────────┘
-                              │ REST HTTP Requests (Axios + JWT)
- ┌────────────────────────────▼────────────────────────────┐
- │                  Express Node.js API                   │
- │  - JWT Auth Middleware & Role-Based Access Control     │
- │  - Zod Data Validation Schemas                         │
- │  - PDFKit Vector Document Builder (Binary PDF Blobs)   │
- └────────────────────────────┬────────────────────────────┘
-                              │ Prisma ORM
- ┌────────────────────────────▼────────────────────────────┐
- │                     SQLite Database                     │
- │  - User, Customer, Product, SalesChallan, StockMovement │
- └─────────────────────────────────────────────────────────┘
+ ┌─────────────────────────────────────────────────────────────────┐
+ │                     React Frontend (Vite)                       │
+ │  - Design System with HSL Color Tokens & Theme Provider         │
+ │  - Context API State Management (AuthContext, ThemeContext)     │
+ │  - Modular UI Components (Modal, Header, Toast, StampSeal)      │
+ └────────────────────────────────┬────────────────────────────────┘
+                                  │ REST HTTP (Axios + Bearer JWT)
+ ┌────────────────────────────────▼────────────────────────────────┐
+ │                      Node.js Express API                        │
+ │  - Authentication Middleware (Passport / JWT Verification)      │
+ │  - Role-Based Access Control (authorizeRoles Middleware)        │
+ │  - Input Validation via Zod Schemas                             │
+ │  - PDF Vector Rendering Engine (PDFKit)                         │
+ └────────────────────────────────┬────────────────────────────────┘
+                                  │ Prisma ORM
+ ┌────────────────────────────────▼────────────────────────────────┐
+ │                        Database Layer                           │
+ │  - SQLite (Local Dev) / PostgreSQL (Production Compatible)      │
+ └─────────────────────────────────────────────────────────────────┘
 ```
 
-1. **Frontend Layer**: Built with React 18, TypeScript, and Vite. Implements a rich design system with dynamic HSL color tokens, dark/light theme switching, responsive navigation drawers, and custom SVG official stamp seals.
-2. **Backend API Layer**: Express server written in TypeScript. Implements strict JWT token verification, RBAC authorization middleware, and Zod input validation.
-3. **Database Layer**: Managed by Prisma ORM. Uses SQLite for zero-config local development and can be switched to PostgreSQL for cloud production deployment by updating `DATABASE_URL` in `schema.prisma`.
-4. **PDF Engine**: Dynamic vector PDF generation powered by `pdfkit`. Generates high-resolution tax invoices with auto-calculated totals, custom headers, and dynamic user role signatures.
+1. **Frontend**: Component-driven architecture using React 18, TypeScript, and Vite. Utilizes CSS variables for seamless light/dark theme switching and dynamic user profile badges.
+2. **Backend**: Express REST API structured with Controllers, Routes, Services, and Middlewares. Routes enforce strict schema parsing using Zod.
+3. **Database & ORM**: Model definitions structured in `prisma/schema.prisma`. Cascading deletes and relation handling ensure database integrity across sales challans, products, and customer follow-up notes.
+4. **PDF Generation**: Native binary PDF compilation on the server using `pdfkit`. Automatically streams PDF blobs directly to local device downloads.
 
 ---
 
-## ⚠️ 8. Known Limitations & Recommendations
+## 📌 8. Assumptions & Known Limitations
 
-1. **Database Storage**: Uses local SQLite storage (`dev.db`). For high-concurrency cloud production deployments, recommended to connect to PostgreSQL / MySQL via Prisma.
-2. **Direct Browser PDF Downloads**: PDF downloads trigger direct browser binary downloads (`Content-Disposition: attachment`). Browser popup blockers do not interfere with standard blob downloads.
-3. **File Attachments**: Customer follow-up notes accept rich text descriptions; image cloud uploads can be connected via AWS S3 / Cloudinary if needed in future releases.
+### Assumptions Made
+1. **Shared Enterprise Workspace**: All team roles operate within the organization workspace (Durga Enterprise), ensuring data consistency across Sales, Warehouse, Accounts, and Admin.
+2. **Auto Challan Numbering**: Challan numbers are auto-generated using timestamp strings formatted as `CHL-YYYYMMDD-XXXX`.
+3. **Product Price Snapshots**: Line items in sales challans save product snapshot details at creation time to prevent historical invoice distortion if catalog prices are later modified.
+
+### Known Limitations
+1. **Local SQLite Engine**: Default setup uses local SQLite database file `dev.db`. For cloud multi-instance auto-scaling deployments, `schema.prisma` provider can be switched to `postgresql`.
+2. **Image Storage**: Product catalog uses standard text SKU/codes. AWS S3 bucket integration can be attached for uploading product thumbnail images.
