@@ -5,6 +5,7 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY backend/package*.json ./
+COPY backend/tsconfig.json ./
 COPY backend/prisma ./prisma/
 
 RUN npm install
@@ -13,6 +14,7 @@ COPY backend/ ./
 
 RUN npx prisma generate
 RUN npm run build
+RUN npx tsc prisma/seed.ts --outDir dist/prisma --module commonjs --target es2020 --moduleResolution node
 
 FROM node:20-alpine AS runner
 
@@ -32,4 +34,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 5000
 
-CMD ["sh", "-c", "npx prisma db push && npx ts-node prisma/seed.ts && npm start"]
+CMD ["sh", "-c", "npx prisma db push && node dist/prisma/seed.js && npm start"]
