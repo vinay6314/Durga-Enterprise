@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+const customApiUrl = (import.meta as any).env?.VITE_API_URL;
+const isDev = (import.meta as any).env?.DEV;
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: customApiUrl || (isDev ? '/api' : 'https://durga-enterprise.onrender.com/api'),
 });
 
 // Interceptor to inject JWT Bearer token
