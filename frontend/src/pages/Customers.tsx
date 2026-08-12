@@ -124,6 +124,7 @@ export const Customers: React.FC<CustomersProps> = ({ onSelectCustomer, addToast
   };
 
   const canEdit = user?.role === 'ADMIN' || user?.role === 'SALES';
+  const canDelete = user?.role === 'ADMIN';
 
   return (
     <div>
@@ -224,22 +225,22 @@ export const Customers: React.FC<CustomersProps> = ({ onSelectCustomer, addToast
                         <Eye size={14} />
                       </button>
                       {canEdit && (
-                        <>
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => openEditModal(c)}
-                            title="Edit Customer"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            className="btn btn-danger btn-sm"
-                            onClick={() => setDeletingCustomer(c)}
-                            title="Delete Customer"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => openEditModal(c)}
+                          title="Edit Customer"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => setDeletingCustomer(c)}
+                          title="Delete Customer"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       )}
                     </div>
                   </td>

@@ -193,16 +193,24 @@ export const recordStockMovement = async (req: AuthenticatedRequest, res: Respon
 export const deleteProduct = async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
 
-  const product = await prisma.product.findUnique({ where: { id } });
-  if (!product) {
-    return res.status(404).json({ success: false, error: 'Product not found.' });
+  try {
+    const product = await prisma.product.findUnique({ where: { id } });
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'Product not found.' });
+    }
+
+    await prisma.$transaction([
+      // Delete related stock movements first (cascade-safe)
+      prisma.stockMovement.deleteMany({ where: { productId: id } }),
+      // Delete product
+      prisma.product.delete({ where: { id } }),
+    ]);
+
+    return res.json({ success: true, message: `Product "${product.name}" deleted successfully.` });
+  } catch (error: any) {
+    console.error('Error deleting product:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to delete product.' });
   }
-
-  // Delete related stock movements first (cascade-safe)
-  await prisma.stockMovement.deleteMany({ where: { productId: id } });
-  await prisma.product.delete({ where: { id } });
-
-  return res.json({ success: true, message: `Product "${product.name}" deleted successfully.` });
 };
 
 export const getStockMovements = async (req: AuthenticatedRequest, res: Response) => {

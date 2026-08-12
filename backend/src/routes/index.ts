@@ -46,7 +46,7 @@ router.get('/customers', authenticateJwt, authorizeRoles(Roles.ADMIN, Roles.SALE
 router.get('/customers/:id', authenticateJwt, authorizeRoles(Roles.ADMIN, Roles.SALES, Roles.ACCOUNTS), getCustomerById);
 router.post('/customers', authenticateJwt, authorizeRoles(Roles.ADMIN, Roles.SALES), createCustomer);
 router.put('/customers/:id', authenticateJwt, authorizeRoles(Roles.ADMIN, Roles.SALES), updateCustomer);
-router.delete('/customers/:id', authenticateJwt, authorizeRoles(Roles.ADMIN, Roles.SALES), deleteCustomer);
+router.delete('/customers/:id', authenticateJwt, authorizeRoles(Roles.ADMIN), deleteCustomer);
 router.post('/customers/:id/followups', authenticateJwt, authorizeRoles(Roles.ADMIN, Roles.SALES), addFollowUpNote);
 
 // Product & Inventory Routes

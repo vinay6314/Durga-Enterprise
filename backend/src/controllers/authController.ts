@@ -14,89 +14,102 @@ const loginSchema = z.object({
 });
 
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = loginSchema.parse(req.body);
-  const cleanEmail = email.toLowerCase().trim();
+  try {
+    const { email, password } = loginSchema.parse(req.body);
+    const cleanEmail = email.toLowerCase().trim();
 
-  let user = await prisma.user.findUnique({
-    where: { email: cleanEmail },
-  });
+    let user = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+    });
 
-  // Auto-create default system accounts on the fly if missing in DB
-  if (!user) {
-    if (cleanEmail === 'vinaychoudary63@gmail.com' || cleanEmail === 'admin@erp.com') {
-      const defaultHash = await bcrypt.hash('Admin@123', 10);
-      user = await prisma.user.create({
-        data: {
-          name: cleanEmail === 'vinaychoudary63@gmail.com' ? 'Vinay Choudary' : 'System Admin',
-          email: cleanEmail,
-          passwordHash: defaultHash,
-          role: 'ADMIN',
-        },
-      });
-    } else if (cleanEmail === 'sales@erp.com') {
-      const hash = await bcrypt.hash('Sales@123', 10);
-      user = await prisma.user.create({
-        data: { name: 'Sarah Sales', email: cleanEmail, passwordHash: hash, role: 'SALES' },
-      });
-    } else if (cleanEmail === 'warehouse@erp.com') {
-      const hash = await bcrypt.hash('Warehouse@123', 10);
-      user = await prisma.user.create({
-        data: { name: 'Wayne Warehouse', email: cleanEmail, passwordHash: hash, role: 'WAREHOUSE' },
-      });
-    } else if (cleanEmail === 'accounts@erp.com') {
-      const hash = await bcrypt.hash('Accounts@123', 10);
-      user = await prisma.user.create({
-        data: { name: 'Adam Accounts', email: cleanEmail, passwordHash: hash, role: 'ACCOUNTS' },
-      });
+    // Auto-create default system accounts on the fly if missing in DB
+    if (!user) {
+      if (cleanEmail === 'vinaychoudary63@gmail.com' || cleanEmail === 'admin@erp.com') {
+        const defaultHash = await bcrypt.hash('Admin@123', 10);
+        user = await prisma.user.create({
+          data: {
+            name: cleanEmail === 'vinaychoudary63@gmail.com' ? 'Vinay Choudary' : 'System Admin',
+            email: cleanEmail,
+            passwordHash: defaultHash,
+            role: 'ADMIN',
+          },
+        });
+      } else if (cleanEmail === 'sales@erp.com') {
+        const hash = await bcrypt.hash('Sales@123', 10);
+        user = await prisma.user.create({
+          data: { name: 'Sarah Sales', email: cleanEmail, passwordHash: hash, role: 'SALES' },
+        });
+      } else if (cleanEmail === 'warehouse@erp.com') {
+        const hash = await bcrypt.hash('Warehouse@123', 10);
+        user = await prisma.user.create({
+          data: { name: 'Wayne Warehouse', email: cleanEmail, passwordHash: hash, role: 'WAREHOUSE' },
+        });
+      } else if (cleanEmail === 'accounts@erp.com') {
+        const hash = await bcrypt.hash('Accounts@123', 10);
+        user = await prisma.user.create({
+          data: { name: 'Adam Accounts', email: cleanEmail, passwordHash: hash, role: 'ACCOUNTS' },
+        });
+      }
     }
-  }
 
-  if (!user) {
-    return res.status(401).json({ success: false, error: 'No account found with this email. Please sign up first.' });
-  }
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'No account found with this email. Please sign up first.' });
+    }
 
-  const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
-  if (!isPasswordValid) {
-    return res.status(401).json({ success: false, error: 'Invalid email or password.' });
-  }
+    if (!isPasswordValid) {
+      return res.status(401).json({ success: false, error: 'Invalid email or password.' });
+    }
 
-  const token = jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    },
-    config.jwtSecret,
-    { expiresIn: '24h' }
-  );
-
-  return res.json({
-    success: true,
-    data: {
-      token,
-      user: {
+    const token = jwt.sign(
+      {
         id: user.id,
-        name: user.name,
         email: user.email,
+        name: user.name,
         role: user.role,
       },
-    },
-  });
+      config.jwtSecret,
+      { expiresIn: '24h' }
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error logging in:', error);
+    if (error instanceof z.ZodError) {
+      const messages = error.errors.map((e) => e.message).join(', ');
+      return res.status(400).json({ success: false, error: messages });
+    }
+    return res.status(500).json({ success: false, error: error.message || 'Login failed.' });
+  }
 };
 
 export const getMe = async (req: AuthenticatedRequest, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, name: true, email: true, role: true, createdAt: true },
+    });
+
+    return res.json({ success: true, data: user });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: error.message || 'Failed to fetch profile.' });
   }
-
-  const user = await prisma.user.findUnique({
-    where: { id: req.user.id },
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
-  });
-
-  return res.json({ success: true, data: user });
 };
 
 const registerSchema = z.object({
@@ -107,50 +120,59 @@ const registerSchema = z.object({
 });
 
 export const register = async (req: Request, res: Response) => {
-  const { name, email, password, role } = registerSchema.parse(req.body);
-  const cleanEmail = email.toLowerCase().trim();
+  try {
+    const { name, email, password, role } = registerSchema.parse(req.body);
+    const cleanEmail = email.toLowerCase().trim();
 
-  const existingUser = await prisma.user.findUnique({
-    where: { email: cleanEmail },
-  });
+    const existingUser = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+    });
 
-  if (existingUser) {
-    return res.status(400).json({ success: false, error: 'User with this email already exists.' });
-  }
+    if (existingUser) {
+      return res.status(400).json({ success: false, error: 'User with this email already exists.' });
+    }
 
-  const passwordHash = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email: cleanEmail,
-      passwordHash,
-      role,
-    },
-  });
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email: cleanEmail,
+        passwordHash,
+        role,
+      },
+    });
 
-  const token = jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    },
-    config.jwtSecret,
-    { expiresIn: '24h' }
-  );
-
-  return res.status(201).json({
-    success: true,
-    data: {
-      token,
-      user: {
+    const token = jwt.sign(
+      {
         id: user.id,
-        name: user.name,
         email: user.email,
+        name: user.name,
         role: user.role,
       },
-    },
-  });
+      config.jwtSecret,
+      { expiresIn: '24h' }
+    );
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error registering user:', error);
+    if (error instanceof z.ZodError) {
+      const messages = error.errors.map((e) => e.message).join(', ');
+      return res.status(400).json({ success: false, error: messages });
+    }
+    return res.status(500).json({ success: false, error: error.message || 'Registration failed.' });
+  }
 };
 
 const updateProfileSchema = z.object({

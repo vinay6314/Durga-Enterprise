@@ -23,6 +23,33 @@ const followUpSchema = z.object({
   note: z.string().min(2, 'Follow-up note cannot be empty'),
 });
 
+const parseDateSafely = (dateStr?: string | null): Date | null => {
+  if (!dateStr || typeof dateStr !== 'string' || dateStr.trim() === '') return null;
+
+  const parsed = new Date(dateStr);
+  if (!isNaN(parsed.getTime())) return parsed;
+
+  const parts = dateStr.split(/[-/]/);
+  if (parts.length === 3) {
+    const p1 = parseInt(parts[0], 10);
+    const p2 = parseInt(parts[1], 10);
+    const p3 = parseInt(parts[2], 10);
+
+    // Format DD-MM-YYYY
+    if (p1 <= 31 && p2 <= 12 && p3 > 1900) {
+      const customDate = new Date(p3, p2 - 1, p1);
+      if (!isNaN(customDate.getTime())) return customDate;
+    }
+    // Format YYYY-MM-DD
+    if (p1 > 1900 && p2 <= 12 && p3 <= 31) {
+      const customDate = new Date(p1, p2 - 1, p3);
+      if (!isNaN(customDate.getTime())) return customDate;
+    }
+  }
+
+  return null;
+};
+
 export const getCustomers = async (req: AuthenticatedRequest, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
@@ -116,96 +143,159 @@ export const getCustomerById = async (req: Request, res: Response) => {
 };
 
 export const createCustomer = async (req: AuthenticatedRequest, res: Response) => {
-  const payload = customerSchema.parse(req.body);
+  try {
+    const payload = customerSchema.parse(req.body);
+    const followUpDate = parseDateSafely(payload.followUpDate);
 
-  const customer = await prisma.customer.create({
-    data: {
-      name: payload.name,
-      mobile: payload.mobile,
-      email: payload.email,
-      businessName: payload.businessName,
-      gstNumber: payload.gstNumber,
-      customerType: payload.customerType,
-      address: payload.address,
-      status: payload.status,
-      notes: payload.notes,
-      followUpDate: payload.followUpDate ? new Date(payload.followUpDate) : null,
-      createdById: req.user?.id,
-    },
-    include: {
-      createdBy: { select: { id: true, name: true, email: true, role: true } },
-    },
-  });
+    const customer = await prisma.customer.create({
+      data: {
+        name: payload.name,
+        mobile: payload.mobile,
+        email: payload.email,
+        businessName: payload.businessName,
+        gstNumber: payload.gstNumber || null,
+        customerType: payload.customerType,
+        address: payload.address,
+        status: payload.status,
+        notes: payload.notes || null,
+        followUpDate,
+        createdById: req.user?.id || null,
+      },
+      include: {
+        createdBy: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
 
-  return res.status(201).json({ success: true, data: customer });
+    return res.status(201).json({ success: true, data: customer });
+  } catch (error: any) {
+    console.error('Error creating customer:', error);
+    if (error instanceof z.ZodError) {
+      const messages = error.errors.map((e) => e.message).join(', ');
+      return res.status(400).json({ success: false, error: messages });
+    }
+    return res.status(500).json({ success: false, error: error.message || 'Failed to save customer.' });
+  }
 };
 
 export const updateCustomer = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const payload = customerSchema.partial().parse(req.body);
+  try {
+    const payload = customerSchema.partial().parse(req.body);
 
-  const existing = await prisma.customer.findUnique({ where: { id } });
-  if (!existing) {
-    return res.status(404).json({ success: false, error: 'Customer not found.' });
+    const existing = await prisma.customer.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Customer not found.' });
+    }
+
+    const followUpDate = payload.followUpDate !== undefined ? parseDateSafely(payload.followUpDate) : undefined;
+
+    const updated = await prisma.customer.update({
+      where: { id },
+      data: {
+        ...(payload.name && { name: payload.name }),
+        ...(payload.mobile && { mobile: payload.mobile }),
+        ...(payload.email && { email: payload.email }),
+        ...(payload.businessName && { businessName: payload.businessName }),
+        ...(payload.gstNumber !== undefined && { gstNumber: payload.gstNumber || null }),
+        ...(payload.customerType && { customerType: payload.customerType }),
+        ...(payload.address && { address: payload.address }),
+        ...(payload.status && { status: payload.status }),
+        ...(payload.notes !== undefined && { notes: payload.notes || null }),
+        ...(followUpDate !== undefined && { followUpDate }),
+      },
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Error updating customer:', error);
+    if (error instanceof z.ZodError) {
+      const messages = error.errors.map((e) => e.message).join(', ');
+      return res.status(400).json({ success: false, error: messages });
+    }
+    return res.status(500).json({ success: false, error: error.message || 'Failed to save customer.' });
   }
-
-  const updated = await prisma.customer.update({
-    where: { id },
-    data: {
-      ...(payload.name && { name: payload.name }),
-      ...(payload.mobile && { mobile: payload.mobile }),
-      ...(payload.email && { email: payload.email }),
-      ...(payload.businessName && { businessName: payload.businessName }),
-      ...(payload.gstNumber !== undefined && { gstNumber: payload.gstNumber }),
-      ...(payload.customerType && { customerType: payload.customerType }),
-      ...(payload.address && { address: payload.address }),
-      ...(payload.status && { status: payload.status }),
-      ...(payload.notes !== undefined && { notes: payload.notes }),
-      ...(payload.followUpDate !== undefined && {
-        followUpDate: payload.followUpDate ? new Date(payload.followUpDate) : null,
-      }),
-    },
-  });
-
-  return res.json({ success: true, data: updated });
 };
 
 export const addFollowUpNote = async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const { note } = followUpSchema.parse(req.body);
+  try {
+    const { note } = followUpSchema.parse(req.body);
 
-  const customer = await prisma.customer.findUnique({ where: { id } });
-  if (!customer) {
-    return res.status(404).json({ success: false, error: 'Customer not found.' });
+    const customer = await prisma.customer.findUnique({ where: { id } });
+    if (!customer) {
+      return res.status(404).json({ success: false, error: 'Customer not found.' });
+    }
+
+    const followUp = await prisma.customerFollowUp.create({
+      data: {
+        customerId: id,
+        note,
+        createdById: req.user!.id,
+      },
+      include: {
+        createdBy: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
+
+    return res.status(201).json({ success: true, data: followUp });
+  } catch (error: any) {
+    console.error('Error adding follow up note:', error);
+    if (error instanceof z.ZodError) {
+      const messages = error.errors.map((e) => e.message).join(', ');
+      return res.status(400).json({ success: false, error: messages });
+    }
+    return res.status(500).json({ success: false, error: error.message || 'Failed to add follow-up note.' });
   }
-
-  const followUp = await prisma.customerFollowUp.create({
-    data: {
-      customerId: id,
-      note,
-      createdById: req.user!.id,
-    },
-    include: {
-      createdBy: { select: { id: true, name: true, email: true, role: true } },
-    },
-  });
-
-  return res.status(201).json({ success: true, data: followUp });
 };
 
 export const deleteCustomer = async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
 
-  const customer = await prisma.customer.findUnique({ where: { id } });
-  if (!customer) {
-    return res.status(404).json({ success: false, error: 'Customer not found.' });
+  try {
+    const customer = await prisma.customer.findUnique({
+      where: { id },
+      include: {
+        challans: {
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!customer) {
+      return res.status(404).json({ success: false, error: 'Customer not found.' });
+    }
+
+    const challanIds = customer.challans.map((c) => c.id);
+
+    await prisma.$transaction(async (tx) => {
+      // Delete items of associated sales challans if any exist
+      if (challanIds.length > 0) {
+        await tx.salesChallanItem.deleteMany({
+          where: { challanId: { in: challanIds } },
+        });
+
+        // Delete associated sales challans
+        await tx.salesChallan.deleteMany({
+          where: { id: { in: challanIds } },
+        });
+      }
+
+      // Delete related follow-up notes
+      await tx.customerFollowUp.deleteMany({ where: { customerId: id } });
+
+      // Delete customer
+      await tx.customer.delete({ where: { id } });
+    });
+
+    return res.json({
+      success: true,
+      message: `Customer "${customer.name}" and associated records deleted successfully.`,
+    });
+  } catch (error: any) {
+    console.error('Error deleting customer:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to delete customer.',
+    });
   }
-
-  // Delete related follow-ups first
-  await prisma.customerFollowUp.deleteMany({ where: { customerId: id } });
-  
-  // Delete customer
-  await prisma.customer.delete({ where: { id } });
-
-  return res.json({ success: true, message: `Customer "${customer.name}" deleted successfully.` });
 };
